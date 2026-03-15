@@ -26,3 +26,5 @@ def mark_all_completed(lst):
         todo['completed'] = True
 
     return None
+
+    

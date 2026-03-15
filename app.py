@@ -138,5 +138,45 @@ def mark_all_todos_completed(list_id):
     session.modified = True
     return redirect(url_for('show_list', list_id=list_id))
 
+@app.route('/lists/<list_id>/edit')
+def edit_list(list_id):
+    lst = find_list_by_id(list_id, session['lists'])
+    if not lst:
+        raise NotFound(description="List not found")
+    
+    return render_template('edit_list.html', lst=lst)
+
+# Delete todo list
+@app.route("/lists/<list_id>/delete", methods=["POST"])
+def delete_list(list_id):
+    lst = find_list_by_id(list_id, session['lists'])
+    if not lst:
+        raise NotFound(description="List not found")
+
+    session['lists'] = [lst for lst in session['lists']
+                        if lst['id'] != list_id]
+
+    flash("The list has been deleted.", "success")
+    session.modified = True
+    return redirect(url_for('get_lists'))
+
+# Edit todo list title
+@app.route("/lists/<list_id>", methods=["POST"])
+def update_list(list_id):
+    title = request.form["list_title"].strip()
+    lst = find_list_by_id(list_id, session['lists'])
+    if not lst:
+        raise NotFound(description="List not found")
+
+    error = error_for_list_title(title, session['lists'])
+    if error:
+        flash(error, "error")
+        return render_template('edit_list.html', lst=lst, title=title)
+
+    lst['title'] = title
+    flash("The list has been updated.", "success")
+    session.modified = True
+    return redirect(url_for('show_list', list_id=list_id))
+
 if __name__ == "__main__":
     app.run(debug=True, port=5003) # Use port 8080 on Cloud9
