@@ -7,20 +7,15 @@ from flask import (
     redirect,
     render_template,
     request,
-    # session,
     url_for,
 )
 from werkzeug.exceptions import NotFound
 from todos.utils import (
-    # delete_todo_by_id,
-    error_for_list_title, 
+    error_for_list_title,
     error_for_todo,
-    # Remove the following line
-    # find_list_by_id,
     find_todo_by_id,
     is_list_completed,
     is_todo_completed,
-    # mark_all_completed,
     sort_items,
     todos_remaining,
 )
@@ -78,17 +73,13 @@ def get_lists():
 def create_list():
     title = request.form["list_title"].strip()
 
-    # error = error_for_list_title(title, session['lists'])
     error = error_for_list_title(title, g.storage.all_lists())
-
     if error:
         flash(error, "error")
         return render_template('new_list.html', title=title)
 
     g.storage.create_new_list(title)
-
     flash("The list has been created.", "success")
-
     return redirect(url_for('get_lists'))
 
 @app.route("/lists/new")
@@ -113,7 +104,6 @@ def create_todo(lst, list_id):
 
     g.storage.create_new_todo(list_id, todo_title)
     flash("The todo was added.", "success")
-
     return redirect(url_for('show_list', list_id=list_id))
 
 @app.route("/lists/<int:list_id>/todos/<int:todo_id>/toggle", methods=["POST"])
@@ -122,16 +112,13 @@ def update_todo_status(lst, todo, list_id, todo_id):
     is_completed = request.form['completed'] == 'True'
     g.storage.update_todo_status(list_id, todo_id, is_completed)
     flash("The todo has been updated.", "success")
-    # Remove the following line
-    # session.modified = True
     return redirect(url_for('show_list', list_id=list_id))
 
 @app.route("/lists/<int:list_id>/todos/<int:todo_id>/delete", methods=["POST"])
 @require_todo
 def delete_todo(lst, todo, list_id, todo_id):
-    g.storage.delete_todo_from_id(list_id, todo_id)
+    g.storage.delete_todo_from_list(list_id, todo_id)
     flash("The todo has been deleted.", "success")
-
     return redirect(url_for('show_list', list_id=list_id))
 
 @app.route("/lists/<int:list_id>/complete_all", methods=["POST"])
@@ -139,7 +126,6 @@ def delete_todo(lst, todo, list_id, todo_id):
 def mark_all_todos_completed(lst, list_id):
     g.storage.mark_all_todos_completed(list_id)
     flash("All todos have been updated.", "success")
-
     return redirect(url_for('show_list', list_id=list_id))
 
 @app.route("/lists/<int:list_id>/edit")
@@ -152,7 +138,6 @@ def edit_list(lst, list_id):
 def delete_list(lst, list_id):
     g.storage.delete_list(list_id)
     flash("The list has been deleted.", "success")
-
     return redirect(url_for('get_lists'))
 
 @app.route("/lists/<int:list_id>", methods=["POST"])
@@ -167,7 +152,6 @@ def update_list(lst, list_id):
 
     g.storage.update_list_by_id(list_id, title)
     flash("The list has been updated.", "success")
-
     return redirect(url_for('show_list', list_id=list_id))
 
 if __name__ == "__main__":
