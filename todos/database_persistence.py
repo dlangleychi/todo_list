@@ -28,7 +28,15 @@ class DatabasePersistence:
             connection.close()
 
     def all_lists(self):
-        query = "SELECT * FROM lists"
+        query = """
+            SELECT lists.*,
+                    COUNT(todos.id) AS todos_count,
+                    COUNT(NULLIF(todos.completed, True)) AS todos_remaining
+            FROM lists
+            LEFT JOIN todos ON todos.list_id = lists.id
+            GROUP BY lists.id
+            ORDER BY lists.title
+        """
         logger.info("Executing query: %s", query) 
         with self._database_connect() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -36,23 +44,36 @@ class DatabasePersistence:
                 results = cursor.fetchall()
 
         lists = [dict(result) for result in results]
-        for lst in lists:
-            todos = self._find_todos_for_list(lst['id'])
-            lst.setdefault('todos', todos)
-
+        # Delete the following loop
+        # for lst in lists:
+        #     todos = self._find_todos_for_list(lst['id'])
+        #     lst.setdefault('todos', todos)
         return lists
 
     def find_list(self, list_id):
-        query = "SELECT * FROM lists WHERE id = %s"
+        query ="""
+            SELECT lists.*,
+                    COUNT(todos.id) AS todos_count,
+                    COUNT(NULLIF(todos.completed, True)) AS todos_remaining
+            FROM lists
+            LEFT JOIN todos ON todos.list_id = lists.id
+            WHERE lists.id = %s
+            GROUP BY lists.id
+            ORDER BY lists.title;
+        """
         logger.info("Executing query: %s with list_id: %s", query, list_id)
         with self._database_connect() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
                 cursor.execute(query, (list_id,))
                 lst = dict(cursor.fetchone())
 
-        todos = self._find_todos_for_list(list_id)
-        lst.setdefault('todos', todos)
+        # todos = self.find_todos_for_list(list_id)
+        # lst.setdefault('todos', todos)
+        # # Delete the next two lines
+        # # lst.setdefault('todos_count', 0)
+        # # lst.setdefault('todos_remaining', 0)
         return lst
+
 
     def create_new_list(self, title):
         query = "INSERT INTO lists (title) VALUES (%s)"
@@ -113,7 +134,7 @@ class DatabasePersistence:
             with conn.cursor() as cursor:
                 cursor.execute(query, (list_id,))
 
-    def _find_todos_for_list(self, list_id):
+    def find_todos_for_list(self, list_id):
         query = "SELECT * FROM todos WHERE list_id = %s"
         logger.info("Executing query: %s with list_id: %s", query, list_id)
         with self._database_connect() as conn:
